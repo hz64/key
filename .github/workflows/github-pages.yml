@@ -1,23 +1,22 @@
 # 工作流名称，随便起
-name: Deploy GitHub Pages
+name: Deploy Single HTML to GitHub Pages
 
-# 触发条件：当你推送到main/master分支时，自动运行
+# 触发条件：推送到 main/master 分支自动部署
 on:
   push:
     branches: [ main, master ]
 
-# 权限配置，必须写，固定写法
+# 必填的权限配置，固定写法，不能改
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 只允许同时运行一个部署任务
+# 防止重复部署，固定写法
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
-# 运行的任务
 jobs:
   deploy:
     environment:
@@ -25,13 +24,23 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 拉取代码
+      # 步骤1：拉取你仓库的所有文件（根目录的index.html会被拉取）
+      - name: Checkout root files
         uses: actions/checkout@v4
 
-      - name: Setup Pages 初始化Pages环境
-        uses: actions/upload-pages-artifact@v3
+      # 步骤2：初始化GitHub Pages环境，固定写法
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
 
-      - name: Deploy to GitHub Pages 部署核心步骤
+      # ✅ 关键核心：上传【根目录所有文件】（你的index.html就在这里）
+      # path: ./  表示 上传仓库根目录下的所有文件，完美适配你的纯静态项目
+      - name: Upload static HTML artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./
+
+      # ✅ 部署步骤 + 你之前需要的超时配置（解决排队超时取消问题）
+      - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
-        timeout-minutes: 30  # ✅ 关键配置：解决超时问题，必加！
+        timeout-minutes: 30
         id: deployment

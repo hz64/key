@@ -1,0 +1,45 @@
+# 工作流名称，随便起
+name: Deploy GitHub Pages
+
+# 触发条件：当你推送到main/master分支时，自动运行
+on:
+  push:
+    branches: [ main, master ]
+
+# 权限配置，必须写，固定写法
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许同时运行一个部署任务
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+# 运行的任务
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 拉取代码
+        uses: actions/checkout@v4
+
+      - name: Setup Pages 初始化Pages环境
+        uses: actions/configure-pages@v4
+
+      - name: Build 打包构建（如果你的项目需要打包，比如Vue/React/Vite，保留这步）
+        run: npm install && npm run build
+
+      - name: Upload artifact 上传打包后的静态文件
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist  # ✅ 这里注意：改成你项目的打包产物目录！比如 dist/build/public 都可以
+
+      - name: Deploy to GitHub Pages 部署核心步骤
+        uses: actions/deploy-pages@v4
+        timeout-minutes: 30  # ✅ 关键配置：解决超时问题，必加！
+        id: deployment
